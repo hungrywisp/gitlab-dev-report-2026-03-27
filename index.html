@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitLab Dev Report — All Repositories</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f1117; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+  a { color: #6c5ce7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  .header { margin-bottom: 32px; border-bottom: 1px solid #2a2d3e; padding-bottom: 20px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .header .period { color: #888; font-size: 13px; }
+  .header .period span { color: #6c5ce7; font-weight: 600; }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .kpi-card { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 10px; padding: 20px; text-align: center; }
+  .kpi-card .kpi-value { font-size: 36px; font-weight: 800; color: #6c5ce7; line-height: 1; }
+  .kpi-card .kpi-label { color: #888; font-size: 12px; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Section headers */
+  .section-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #2a2d3e; }
+
+  /* Summary table */
+  .table-wrap { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 10px; overflow: hidden; margin-bottom: 32px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #12141e; color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 16px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2d3e; }
+  thead th.right { text-align: right; }
+  tbody tr { border-bottom: 1px solid #1e2130; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #1e2233; }
+  tbody td { padding: 12px 16px; vertical-align: middle; }
+  tbody td.right { text-align: right; }
+  .rank { color: #555; font-size: 12px; width: 28px; }
+  .dev-name { font-weight: 600; color: #fff; }
+  .dev-username { color: #6c5ce7; font-size: 12px; }
+  .commits-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .commits-bar { height: 6px; background: #6c5ce7; border-radius: 3px; min-width: 4px; }
+  .commits-num { font-weight: 700; color: #fff; min-width: 28px; }
+  .add { color: #00b894; }
+  .del { color: #d63031; }
+  .badge { display: inline-block; background: #2a2d3e; color: #aaa; border-radius: 4px; padding: 2px 7px; font-size: 11px; margin: 2px 2px 2px 0; }
+
+  /* Developer cards */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .card { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 10px; padding: 20px; }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .card-name { font-size: 16px; font-weight: 700; color: #fff; }
+  .card-username { color: #6c5ce7; font-size: 12px; margin-top: 2px; }
+  .card-commits-big { font-size: 28px; font-weight: 800; color: #6c5ce7; line-height: 1; }
+  .card-commits-label { color: #666; font-size: 11px; text-align: right; }
+
+  .accounts-section { margin-bottom: 12px; }
+  .accounts-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .account-tag { display: inline-block; background: #12141e; border: 1px solid #2a2d3e; border-radius: 5px; padding: 3px 8px; font-size: 12px; color: #ccc; margin: 2px 3px 2px 0; font-family: 'Consolas', monospace; }
+
+  .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-item { background: #12141e; border-radius: 6px; padding: 10px; }
+  .stat-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+  .stat-value { font-size: 14px; font-weight: 700; }
+  .stat-value.green { color: #00b894; }
+  .stat-value.red { color: #d63031; }
+  .stat-value.purple { color: #6c5ce7; }
+  .stat-value.white { color: #fff; }
+
+  .card-mr-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .mr-stat { background: #12141e; border-radius: 6px; padding: 8px; text-align: center; }
+  .mr-stat-val { font-size: 16px; font-weight: 700; color: #fff; }
+  .mr-stat-label { font-size: 10px; color: #555; text-transform: uppercase; }
+
+  .card-projects { margin-top: 10px; }
+  .card-projects .accounts-label { margin-bottom: 5px; }
+
+  .commit-list { margin-top: 12px; }
+  .commit-list .accounts-label { margin-bottom: 5px; }
+  .commit-item { font-size: 12px; color: #888; padding: 2px 0; padding-left: 10px; border-left: 2px solid #2a2d3e; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .commit-item:hover { color: #ccc; border-left-color: #6c5ce7; }
+  .more-commits { font-size: 11px; color: #555; margin-top: 4px; }
+
+  /* Insights */
+  .insights { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 10px; padding: 20px; margin-bottom: 32px; }
+  .insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 12px; }
+  .insight-item { background: #12141e; border-radius: 8px; padding: 14px; border-left: 3px solid #6c5ce7; }
+  .insight-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .insight-value { font-size: 15px; font-weight: 700; color: #fff; }
+  .insight-sub { font-size: 12px; color: #777; margin-top: 3px; }
+
+  /* Footer */
+  .footer { text-align: center; color: #444; font-size: 12px; padding-top: 20px; border-top: 1px solid #1e2130; }
+  .footer span { color: #6c5ce7; }
+
+  /* Migration lines style */
+  .raw-lines { color: #888; font-size: 12px; text-decoration: line-through; }
+  .code-lines { color: #00b894; font-weight: 700; }
+  .migration-sub { color: #e17055; font-size: 12px; }
+  .migration-note { font-size: 10px; color: #555; margin-top: 2px; }
+  th.right-col { text-align: right; }
+
+  /* Tracker Tasks Section */
+  .tracker-summary-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
+  .tracker-stat-pill { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 20px; padding: 6px 16px; font-size: 13px; color: #ccc; }
+  .tracker-stat-pill .pill-num { font-weight: 700; color: #fff; margin-right: 4px; }
+  .tracker-stat-pill.total { border-color: #6c5ce7; }
+  .tracker-stat-pill.total .pill-num { color: #6c5ce7; }
+  .tracker-stat-pill.closed .pill-num { color: #00b894; }
+  .tracker-stat-pill.inprog .pill-num { color: #74b9ff; }
+  .tracker-stat-pill.testing .pill-num { color: #fdcb6e; }
+  .tracker-stat-pill.toprod .pill-num { color: #a29bfe; }
+  .tracker-stat-pill.ready .pill-num { color: #55efc4; }
+  .tracker-stat-pill.other .pill-num { color: #b2bec3; }
+
+  .tracker-table-wrap { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .tracker-table-wrap table { width: 100%; border-collapse: collapse; }
+  .tracker-table-wrap thead th { background: #12141e; color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 11px 14px; text-align: left; font-weight: 600; border-bottom: 1px solid #2a2d3e; white-space: nowrap; }
+  .tracker-table-wrap tbody tr { border-bottom: 1px solid #1e2130; }
+  .tracker-table-wrap tbody tr:last-child { border-bottom: none; }
+  .tracker-table-wrap tbody tr:hover { background: #1e2233; }
+  .tracker-table-wrap tbody td { padding: 10px 14px; vertical-align: middle; }
+
+  .task-key-badge { display: inline-block; background: #12141e; border: 1px solid #3a3d50; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: 'Consolas', monospace; color: #a29bfe; margin-right: 8px; white-space: nowrap; }
+  .task-summary { font-size: 13px; color: #ddd; }
+
+  .type-badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .type-task { background: #1e2a3e; color: #74b9ff; border: 1px solid #2a3a50; }
+  .type-bug { background: #2e1a1a; color: #ff7675; border: 1px solid #4a2a2a; }
+
+  .status-badge { display: inline-block; border-radius: 4px; padding: 3px 9px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .status-closed { background: #1a2e22; color: #00b894; border: 1px solid #1e3d2a; }
+  .status-inprog { background: #1a2040; color: #74b9ff; border: 1px solid #1e2d50; }
+  .status-testing { background: #2e2200; color: #fdcb6e; border: 1px solid #4a3800; }
+  .status-toprod { background: #22163a; color: #a29bfe; border: 1px solid #342250; }
+  .status-ready { background: #162a28; color: #55efc4; border: 1px solid #1e3a36; }
+  .status-docs { background: #2a2010; color: #e17055; border: 1px solid #3d2e18; }
+  .status-prodtest { background: #1e2830; color: #81ecec; border: 1px solid #2a3840; }
+  .status-backlog { background: #1e1e28; color: #636e72; border: 1px solid #2a2a38; }
+
+  .priority-badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .priority-critical { background: #2e1a1a; color: #ff7675; border: 1px solid #4a2a2a; }
+  .priority-medium { background: #1e2028; color: #b2bec3; border: 1px solid #2a2c38; }
+  .priority-low { background: #1a1e28; color: #778ca3; border: 1px solid #252834; }
+
+  .stars { color: #f9ca24; font-size: 13px; cursor: help; white-space: nowrap; }
+  .time-spent { color: #888; font-size: 12px; font-family: 'Consolas', monospace; }
+
+  .dev-by-tasks { margin-top: 24px; margin-bottom: 20px; }
+  .dev-tasks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 14px; }
+  .dev-tasks-card { background: #1a1d27; border: 1px solid #2a2d3e; border-radius: 8px; padding: 14px; }
+  .dev-tasks-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .dev-tasks-name { font-weight: 700; color: #fff; font-size: 14px; }
+  .dev-tasks-count { background: #6c5ce7; color: #fff; border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+  .dev-task-row { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid #1e2130; }
+  .dev-task-row:last-child { border-bottom: none; }
+  .dev-task-key { font-family: 'Consolas', monospace; font-size: 11px; color: #a29bfe; white-space: nowrap; min-width: 72px; }
+  .dev-task-summary { font-size: 12px; color: #999; flex: 1; line-height: 1.4; }
+  .dev-task-stars { color: #f9ca24; font-size: 11px; white-space: nowrap; }
+
+  .complexity-legend { background: #12141e; border: 1px solid #2a2d3e; border-radius: 8px; padding: 14px 18px; margin-top: 4px; }
+  .complexity-legend-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .complexity-legend-items { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+  .complexity-legend-item { font-size: 12px; color: #888; }
+  .complexity-legend-item .stars { font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>GitLab Dev Report &mdash; All Repositories</h1>
+    <div class="period">Period: <span>20.03.2026 &mdash; 27.03.2026</span> &nbsp;|&nbsp; Generated: 27.03.2026</div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-value">164</div>
+      <div class="kpi-label">Commits</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">10</div>
+      <div class="kpi-label">Developers</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">8</div>
+      <div class="kpi-label">Repositories</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">23</div>
+      <div class="kpi-label">Branches</div>
+    </div>
+  </div>
+
+  <!-- Summary Table -->
+  <div class="section-title">Summary by Developer</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>Developer</th>
+          <th>Commits</th>
+          <th class="right">Raw Add</th>
+          <th class="right">~Migration</th>
+          <th class="right">Code Add</th>
+          <th class="right">Deletions</th>
+          <th>MRs</th>
+          <th>Repositories</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <td class="rank">1</td>
+          <td>
+            <div class="dev-name">Sergey Klimov</div>
+            <div class="dev-username">@KlimovS</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:200px"></div>
+              <span class="commits-num">67</span>
+            </div>
+          </td>
+          <td class="right add">+23,690</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+23,690</td>
+          <td class="right del">&minus;2,573</td>
+          <td>5 / 5 merged</td>
+          <td><span class="badge">Insapp</span><span class="badge">claude-bot</span><span class="badge">cloud-agents</span><span class="badge">gitlab-mcp</span><span class="badge">tracker-mcp</span><span class="badge">nginx</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">2</td>
+          <td>
+            <div class="dev-name">Alex Svistunov</div>
+            <div class="dev-username">@svistunov</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:69px"></div>
+              <span class="commits-num">23</span>
+            </div>
+          </td>
+          <td class="right"><span class="raw-lines">+31,495</span></td>
+          <td class="right migration-sub">&minus;21,500</td>
+          <td class="right code-lines">+9,995</td>
+          <td class="right del">&minus;140</td>
+          <td>11 / 9 merged</td>
+          <td><span class="badge">Insapp</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">3</td>
+          <td>
+            <div class="dev-name">Ilya Kotov</div>
+            <div class="dev-username">@IlyaKotov</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:51px"></div>
+              <span class="commits-num">17</span>
+            </div>
+          </td>
+          <td class="right"><span class="raw-lines">+18,872</span></td>
+          <td class="right migration-sub">&minus;17,587</td>
+          <td class="right code-lines">+1,285</td>
+          <td class="right del">&minus;2,080</td>
+          <td>1 / 1 merged</td>
+          <td><span class="badge">Insapp</span><span class="badge">Claude Skills</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">4</td>
+          <td>
+            <div class="dev-name">Lev Seriy</div>
+            <div class="dev-username">@seriy</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:42px"></div>
+              <span class="commits-num">14</span>
+            </div>
+          </td>
+          <td class="right add">+297</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+297</td>
+          <td class="right del">&minus;97</td>
+          <td>3 / 3 merged</td>
+          <td><span class="badge">Insapp</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">5</td>
+          <td>
+            <div class="dev-name">Geo M</div>
+            <div class="dev-username">@GeoM</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:42px"></div>
+              <span class="commits-num">14</span>
+            </div>
+          </td>
+          <td class="right add">+3,897</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+3,897</td>
+          <td class="right del">&minus;756</td>
+          <td>&mdash;</td>
+          <td><span class="badge">Claude Skills</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">6</td>
+          <td>
+            <div class="dev-name">Dmitriy Listopad</div>
+            <div class="dev-username">@Listopad</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:30px"></div>
+              <span class="commits-num">10</span>
+            </div>
+          </td>
+          <td class="right add">+3,504</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+3,504</td>
+          <td class="right del">&minus;44</td>
+          <td>1 / 1 merged</td>
+          <td><span class="badge">Insapp</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">7</td>
+          <td>
+            <div class="dev-name">Dmitriy Khlopov</div>
+            <div class="dev-username">@hlopov</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:27px"></div>
+              <span class="commits-num">9</span>
+            </div>
+          </td>
+          <td class="right add">+85</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+85</td>
+          <td class="right del">&minus;45</td>
+          <td>1 / 1 merged</td>
+          <td><span class="badge">Insapp</span><span class="badge">nginx</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">8</td>
+          <td>
+            <div class="dev-name">Pavel Tkachenko</div>
+            <div class="dev-username">@PavelTkachenk0</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:21px"></div>
+              <span class="commits-num">7</span>
+            </div>
+          </td>
+          <td class="right add">+3,731</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+3,731</td>
+          <td class="right del">&minus;2,124</td>
+          <td>7 / 6 merged</td>
+          <td><span class="badge">Insapp</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">9</td>
+          <td>
+            <div class="dev-name">Aleksey Tarasov</div>
+            <div class="dev-username">@tarasov</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:6px"></div>
+              <span class="commits-num">2</span>
+            </div>
+          </td>
+          <td class="right add">+3</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+3</td>
+          <td class="right del">&minus;2</td>
+          <td>&mdash;</td>
+          <td><span class="badge">nginx</span></td>
+        </tr>
+
+        <tr>
+          <td class="rank">10</td>
+          <td>
+            <div class="dev-name">Vozakov Nikita</div>
+            <div class="dev-username">@vozakov</div>
+          </td>
+          <td>
+            <div class="commits-bar-wrap">
+              <div class="commits-bar" style="width:3px"></div>
+              <span class="commits-num">1</span>
+            </div>
+          </td>
+          <td class="right add">+11,050</td>
+          <td class="right" style="color:#555">&mdash;</td>
+          <td class="right add">+11,050</td>
+          <td class="right del">&mdash;</td>
+          <td>&mdash;</td>
+          <td><span class="badge">Site Draft</span></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+  <div style="background:#12141e; border: 1px solid #2a2d3e; border-top: none; border-radius: 0 0 10px 10px; padding: 10px 16px; font-size: 12px; color: #666; margin-bottom: 32px; margin-top: -32px;">
+    <span style="color:#e17055; font-weight:600;">~Migration</span> — estimated lines from EF Core ModelSnapshot, migration files, and generated Swagger docs subtracted from "Code Add".
+    <span style="color:#888; margin-left: 16px;">Alex Svistunov: &minus;21,500 (INS-3025 ~14k + INS-2747 ~7.5k)</span>
+    <span style="color:#888; margin-left: 16px;">Ilya Kotov: &minus;17,587 (parent-id migration ~6.9k + swagger gen ~7.7k + AlfaDec ~3k)</span>
+  </div>
+
+  <!-- Developer Cards -->
+  <div class="section-title">Developer Cards</div>
+  <div class="cards-grid">
+
+    <!-- Sergey Klimov -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Sergey Klimov</div>
+          <div class="card-username">@KlimovS</div>
+        </div>
+        <div>
+          <div class="card-commits-big">67</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Sergey Klimov &lt;hungrywisp@gmail.com&gt;</span>
+        <span class="account-tag">Sergey Klimov &lt;klimov@insapp.ru&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+23,690</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;2,573</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">5</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">5</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#00b894">100%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">19.6h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span><span class="badge">insapp-claude-bot</span><span class="badge">insapp-cloud-agents</span><span class="badge">insapp-gitlab-mcp</span><span class="badge">insapp-tracker-mcp</span><span class="badge">nginx_configs</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">feat(INS-3057): оптимизация аудита InsappLog</div>
+        <div class="commit-item">refactor: BackgroundTaskService &mdash; Channel-based dispatch</div>
+        <div class="commit-item">fix(renessans): для ЮЛ используется flow calculate+import</div>
+        <div class="commit-item">feat: pipeline agents ClaudeCode step SQL improvements</div>
+        <div class="commit-item">Add gitlab_create_merge_request MCP tool</div>
+        <div class="more-commits">+ 62 more commits</div>
+      </div>
+    </div>
+
+    <!-- Alex Svistunov -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Alex Svistunov</div>
+          <div class="card-username">@svistunov</div>
+        </div>
+        <div>
+          <div class="card-commits-big">23</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Alex Svistunov &lt;alex.svistunov1@gmail.com&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+31,495</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;140</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">11</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">9</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#fdcb6e">82%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">0.9h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">feat(INS-2747): apply ranking positions to fin offer showcase</div>
+        <div class="commit-item">feat(INS-2747): add FinRankingJob and FinRankingReenableJob</div>
+        <div class="commit-item">feat(INS-2747): add FinRankingService orchestrator</div>
+        <div class="commit-item">INS-2387: server tracking of MFO form stages</div>
+        <div class="commit-item">INS-3044: получать ShowBadges из PartnerCacheService</div>
+        <div class="more-commits">+ 18 more commits</div>
+      </div>
+    </div>
+
+    <!-- Ilya Kotov -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Ilya Kotov</div>
+          <div class="card-username">@IlyaKotov</div>
+        </div>
+        <div>
+          <div class="card-commits-big">17</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Ilya Kotov &lt;iikot860@gmail.com&gt;</span>
+        <span class="account-tag">Ilya Kotov &lt;kotov@insapp.ru&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+18,872</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;2,080</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">1</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">1</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#00b894">100%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">3.8h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span><span class="badge">Insapp Claude Skills</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">INS-3078 fix pari category</div>
+        <div class="commit-item">Add complex documentation for most of models</div>
+        <div class="commit-item">add statusline tool: context day/week limits</div>
+        <div class="commit-item">update skill gitlab_dev_report</div>
+        <div class="commit-item">AlfaDec changes</div>
+        <div class="more-commits">+ 12 more commits</div>
+      </div>
+    </div>
+
+    <!-- Lev Seriy (merged with keshigo) -->
+    <div class="card" style="border-color: #6c5ce7; border-width: 1.5px;">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Lev Seriy</div>
+          <div class="card-username">@seriy</div>
+        </div>
+        <div>
+          <div class="card-commits-big">14</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Lev Seriy &lt;seriy@insapp.ru&gt;</span>
+        <span class="account-tag">keshigo &lt;swtorsochi@gmail.com&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+297</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;97</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">3</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">3</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#00b894">100%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">9.3h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">feat: MaksStrategy для кросса Быстро-КАСКО в UpsaleManager</div>
+        <div class="commit-item">feat: получение документа КАСКО-кросса в GetDocuments МАКС</div>
+        <div class="commit-item">feat: кросс-теги в маппере МАКС</div>
+        <div class="commit-item">feat: UpsaleType KaskoBystroMaks = 20</div>
+        <div class="commit-item">renins-Juridical-fix2</div>
+        <div class="more-commits">+ 9 more commits</div>
+      </div>
+    </div>
+
+    <!-- Geo M -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Geo M</div>
+          <div class="card-username">@GeoM</div>
+        </div>
+        <div>
+          <div class="card-commits-big">14</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Geo M &lt;logvas7@gmail.com&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+3,897</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;756</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Created</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Merged</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Acceptance</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Avg Merge</div></div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp Claude Skills</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">hh-resume-search: add HTML shortlist template</div>
+        <div class="commit-item">feat: add playwright-persistent-session guide</div>
+        <div class="commit-item">feat: add claude-learning-system guide</div>
+        <div class="commit-item">add /mfo-daily skill</div>
+        <div class="commit-item">feat: add 6 skills from personal catalog</div>
+        <div class="more-commits">+ 9 more commits</div>
+      </div>
+    </div>
+
+    <!-- Dmitriy Listopad -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Dmitriy Listopad</div>
+          <div class="card-username">@Listopad</div>
+        </div>
+        <div>
+          <div class="card-commits-big">10</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Dmitriy Listopad &lt;dimalist2005@gmail.com&gt;</span>
+        <span class="account-tag">Dmitriy Listopad &lt;listopad@insapp.ru&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+3,504</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;44</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">1</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">1</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#00b894">100%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">0.2h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">add интеграционные тесты CopyApplicationDocuments</div>
+        <div class="commit-item">add интеграционные тесты GetKaskoDocumentsByPolicyNumber</div>
+        <div class="commit-item">добавить тесты GetKaskoPaymentStatus</div>
+        <div class="commit-item">add getkaskoPaymentlinkTests</div>
+        <div class="commit-item">INS-2697 add upsales to apikey when create</div>
+      </div>
+    </div>
+
+    <!-- Dmitriy Khlopov -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Dmitriy Khlopov</div>
+          <div class="card-username">@hlopov</div>
+        </div>
+        <div>
+          <div class="card-commits-big">9</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Khlopov Dmitriy &lt;khlopovdi@pochtabank.ru&gt;</span>
+        <span class="account-tag">Дмитрий Хлопов &lt;dmtree.h@gmail.com&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+85</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;45</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">1</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">1</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#00b894">100%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">4.3h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span><span class="badge">nginx_configs</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">INS-2876 add InsappSegmentationException</div>
+        <div class="commit-item">INS-2923 osago car data validation</div>
+        <div class="commit-item">INS-2931 ARM add isActive condition to partners query</div>
+        <div class="commit-item">rename sdek to cdek</div>
+        <div class="commit-item">INS-2882 test-ppd.insapp.ru</div>
+      </div>
+    </div>
+
+    <!-- Pavel Tkachenko -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Pavel Tkachenko</div>
+          <div class="card-username">@PavelTkachenk0</div>
+        </div>
+        <div>
+          <div class="card-commits-big">7</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Pavel Tkachenko &lt;tkachenko@insapp.ru&gt;</span>
+        <span class="account-tag">PavelTkachenk0 &lt;128927786+PavelTkachenk0@users.noreply.github.com&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+3,731</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;2,124</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat">
+          <div class="mr-stat-val">7</div>
+          <div class="mr-stat-label">Created</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">6</div>
+          <div class="mr-stat-label">Merged</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val" style="color:#fdcb6e">86%</div>
+          <div class="mr-stat-label">Acceptance</div>
+        </div>
+        <div class="mr-stat">
+          <div class="mr-stat-val">1.4h</div>
+          <div class="mr-stat-label">Avg Merge</div>
+        </div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">INS-1657: кросс-продажа КАСКО после покупки ОСАГО</div>
+        <div class="commit-item">INS-2852 поправил приоритезацию офферов</div>
+        <div class="commit-item">feat(dbmcp): add query_statistics tool</div>
+        <div class="commit-item">refactor: извлечение ILogWriterQueue</div>
+        <div class="commit-item">Сделал вызов prepareContract синхронным</div>
+      </div>
+    </div>
+
+    <!-- Aleksey Tarasov (merged 2 accounts) -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Aleksey Tarasov</div>
+          <div class="card-username">@tarasov</div>
+        </div>
+        <div>
+          <div class="card-commits-big">2</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Aleksey Tarasov &lt;at@kub-it.ru&gt;</span>
+        <span class="account-tag">Tarasov Aleksey &lt;aleksey@tarasov.god&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+3</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&minus;2</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Created</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Merged</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Acceptance</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Avg Merge</div></div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">nginx_configs</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">Update sites.insapp.ru.csv</div>
+        <div class="commit-item">add postcheck</div>
+      </div>
+    </div>
+
+    <!-- Vozakov Nikita -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">Vozakov Nikita</div>
+          <div class="card-username">@vozakov</div>
+        </div>
+        <div>
+          <div class="card-commits-big">1</div>
+          <div class="card-commits-label">commits</div>
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-label">Git Accounts</div>
+        <span class="account-tag">Vozakov Nikita &lt;vozakov@insapp.ru&gt;</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item">
+          <div class="stat-label">Additions</div>
+          <div class="stat-value green">+11,050</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Deletions</div>
+          <div class="stat-value red">&mdash;</div>
+        </div>
+      </div>
+      <div class="card-mr-row">
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Created</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Merged</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Acceptance</div></div>
+        <div class="mr-stat"><div class="mr-stat-val">&mdash;</div><div class="mr-stat-label">Avg Merge</div></div>
+      </div>
+      <div class="card-projects">
+        <div class="accounts-label">Repositories</div>
+        <span class="badge">Insapp Site Draft</span>
+      </div>
+      <div class="commit-list">
+        <div class="accounts-label">Recent Commits</div>
+        <div class="commit-item">Initial commit: Insapp Site + Hub</div>
+      </div>
+    </div>
+
+  </div><!-- /cards-grid -->
+
+  <!-- Tracker Tasks -->
+  <div class="section-title">Tracker Overview</div>
+
+  <!-- Summary bar -->
+  <div class="tracker-summary-bar">
+    <div class="tracker-stat-pill total"><span class="pill-num">221</span> tasks updated in period across 7 developers</div>
+    <div class="tracker-stat-pill closed"><span class="pill-num">126</span> Закрыто</div>
+    <div class="tracker-stat-pill inprog"><span class="pill-num">40</span> В работе</div>
+    <div class="tracker-stat-pill other"><span class="pill-num">55</span> Прочее</div>
+  </div>
+
+  <!-- Tracker Overview Table -->
+  <div class="tracker-table-wrap" style="margin-bottom: 24px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Developer</th>
+          <th class="right">Tasks Total</th>
+          <th class="right">Closed</th>
+          <th class="right">In Progress</th>
+          <th class="right">Other</th>
+          <th class="right">Linked Commits</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="dev-name">Ilya Kotov</div><div class="dev-username">@IlyaKotov</div></td>
+          <td class="right" style="font-weight:700; color:#fff">108</td>
+          <td class="right" style="color:#00b894">89</td>
+          <td class="right" style="color:#74b9ff">8</td>
+          <td class="right" style="color:#b2bec3">11</td>
+          <td class="right"><span style="background:#1e2a3e; color:#74b9ff; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">2</span></td>
+        </tr>
+        <tr>
+          <td><div class="dev-name">Dmitriy Khlopov</div><div class="dev-username">@hlopov</div></td>
+          <td class="right" style="font-weight:700; color:#fff">37</td>
+          <td class="right" style="color:#00b894">3</td>
+          <td class="right" style="color:#74b9ff">10</td>
+          <td class="right" style="color:#b2bec3">24</td>
+          <td class="right"><span style="background:#1e2a3e; color:#74b9ff; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">6</span></td>
+        </tr>
+        <tr>
+          <td><div class="dev-name">Alex Svistunov</div><div class="dev-username">@svistunov</div></td>
+          <td class="right" style="font-weight:700; color:#fff">36</td>
+          <td class="right" style="color:#00b894">27</td>
+          <td class="right" style="color:#74b9ff">3</td>
+          <td class="right" style="color:#b2bec3">6</td>
+          <td class="right"><span style="background:#1e2a3e; color:#74b9ff; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">5</span></td>
+        </tr>
+        <tr>
+          <td><div class="dev-name">Pavel Tkachenko</div><div class="dev-username">@PavelTkachenk0</div></td>
+          <td class="right" style="font-weight:700; color:#fff">11</td>
+          <td class="right" style="color:#00b894">1</td>
+          <td class="right" style="color:#74b9ff">4</td>
+          <td class="right" style="color:#b2bec3">6</td>
+          <td class="right"><span style="background:#1e2a3e; color:#74b9ff; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">2</span></td>
+        </tr>
+        <tr>
+          <td><div class="dev-name">Lev Seriy</div><div class="dev-username">@seriy</div></td>
+          <td class="right" style="font-weight:700; color:#fff">10</td>
+          <td class="right" style="color:#00b894">1</td>
+          <td class="right" style="color:#74b9ff">5</td>
+          <td class="right" style="color:#b2bec3">4</td>
+          <td class="right"><span style="background:#2a2a38; color:#636e72; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">0</span></td>
+        </tr>
+        <tr>
+          <td><div class="dev-name">Dmitriy Listopad</div><div class="dev-username">@Listopad</div></td>
+          <td class="right" style="font-weight:700; color:#fff">13</td>
+          <td class="right" style="color:#00b894">3</td>
+          <td class="right" style="color:#74b9ff">7</td>
+          <td class="right" style="color:#b2bec3">3</td>
+          <td class="right"><span style="background:#1e2a3e; color:#74b9ff; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">2</span></td>
+        </tr>
+        <tr>
+          <td><div class="dev-name">Sergey Klimov</div><div class="dev-username">@KlimovS</div></td>
+          <td class="right" style="font-weight:700; color:#fff">6</td>
+          <td class="right" style="color:#00b894">2</td>
+          <td class="right" style="color:#74b9ff">3</td>
+          <td class="right" style="color:#b2bec3">1</td>
+          <td class="right"><span style="background:#1e2a3e; color:#74b9ff; border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700;">2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Detailed Tasks subtitle -->
+  <div class="section-title" style="margin-top:0;">Detailed Task Table (commit-linked)</div>
+
+  <!-- Summary pills for detailed tasks -->
+  <div class="tracker-summary-bar">
+    <div class="tracker-stat-pill total"><span class="pill-num">20</span> tasks linked to commits</div>
+    <div class="tracker-stat-pill closed"><span class="pill-num">5</span> Закрыто</div>
+    <div class="tracker-stat-pill inprog"><span class="pill-num">2</span> В работе</div>
+    <div class="tracker-stat-pill testing"><span class="pill-num">3</span> Тестирование</div>
+    <div class="tracker-stat-pill toprod"><span class="pill-num">4</span> Залить на Prod</div>
+    <div class="tracker-stat-pill ready"><span class="pill-num">3</span> Готово к тестированию</div>
+    <div class="tracker-stat-pill other"><span class="pill-num">3</span> Прочее</div>
+  </div>
+
+  <!-- Tasks Table -->
+  <div class="tracker-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Задача</th>
+          <th>Тип</th>
+          <th>Статус</th>
+          <th>Приоритет</th>
+          <th>Исполнитель</th>
+          <th>Сложность</th>
+          <th>Время</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-1657</span>
+            <span class="task-summary">ОСАГО | КАСКО | АБ| Процесс продажи КАСКО к купленному ОСАГО</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-testing">Тестирование</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Pavel Tkachenko</td>
+          <td><span class="stars" title="Полная интеграция КАСКО+ОСАГО, кросс-продуктовый флоу, TechData обогащение, 2 процесса (email+redirect)">⭐⭐⭐⭐⭐</span></td>
+          <td><span class="time-spent">3d 1h</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2387</span>
+            <span class="task-summary">МФО 2.1 | Серверный трекинг этапов анкеты</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-closed">Закрыто</span></td>
+          <td><span class="priority-badge priority-low">Низкий</span></td>
+          <td>Alex Svistunov</td>
+          <td><span class="stars" title="Кросс-компонентные изменения: новые статусы, эндпоинт, воронка в АРМ">⭐⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2697</span>
+            <span class="task-summary">ОСАГО | Доработка PartnerApiKey/Create — автосоздание настроек кроссов</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-testing">Тестирование</span></td>
+          <td><span class="priority-badge priority-critical">Критичный</span></td>
+          <td>Dmitriy Listopad</td>
+          <td><span class="stars" title="Автосоздание PartnerInsurerSettings + UpsaleSettings при создании ключа">⭐⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2742</span>
+            <span class="task-summary">ОСАГО | СК БСО — ошибка формата документа ТС</span>
+          </td>
+          <td><span class="type-badge type-bug">Ошибка</span></td>
+          <td><span class="status-badge status-toprod">Залить на Prod</span></td>
+          <td><span class="priority-badge priority-critical">Критичный</span></td>
+          <td>Ilya Kotov</td>
+          <td><span class="stars" title="Изолированный баг формата передачи документа">⭐⭐</span></td>
+          <td><span class="time-spent">1d 4h 10m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2747</span>
+            <span class="task-summary">МФО 2.0 | Алгоритм ранжирования офферов (EPC+)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-inprog">В работе</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Alex Svistunov</td>
+          <td><span class="stars" title="EPIC: полный алгоритм EPC+, confidence weight, отключение/включение, деградация, позиции витрины">⭐⭐⭐⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2852</span>
+            <span class="task-summary">ОСАГО | Приоритизация вывода офферов по бейджам</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-toprod">Залить на Prod</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Pavel Tkachenko</td>
+          <td><span class="stars" title="Сложная логика приоритетов бейджей с кастомными настройками партнёров">⭐⭐⭐⭐</span></td>
+          <td><span class="time-spent">2d 1h</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2876</span>
+            <span class="task-summary">ОСАГО | Сегментация Ренессанс и Интач (авто &gt;14 лет)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-docs">Обновление документации</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Dmitriy Khlopov</td>
+          <td><span class="stars" title="Добавление сегментации + BusinessLogs для 2 СК">⭐⭐</span></td>
+          <td><span class="time-spent">3h 30m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2882</span>
+            <span class="task-summary">МФО 2.0 | Домен и настройка (Пампаду)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-ready">Готово к тестированию</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Dmitriy Khlopov</td>
+          <td><span class="stars" title="Конфиг — создание домена и nginx-настройка">⭐</span></td>
+          <td><span class="time-spent">20m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2923</span>
+            <span class="task-summary">ОСАГО | Валидация licensePlate при СТС</span>
+          </td>
+          <td><span class="type-badge type-bug">Ошибка</span></td>
+          <td><span class="status-badge status-toprod">Залить на Prod</span></td>
+          <td><span class="priority-badge priority-critical">Критичный</span></td>
+          <td>Dmitriy Khlopov</td>
+          <td><span class="stars" title="Изолированный баг валидации одного поля">⭐⭐</span></td>
+          <td><span class="time-spent">2h 30m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2931</span>
+            <span class="task-summary">Добавить признак активности на партнёров (IsActive)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-prodtest">Тестирование на проде</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Dmitriy Khlopov</td>
+          <td><span class="stars" title="Кросс-компонент: АРМ, Графана, Отчётный сервер, API — везде фильтровать">⭐⭐⭐</span></td>
+          <td><span class="time-spent">4h 30m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-2974</span>
+            <span class="task-summary">МФО 2.0 | Домен и настройка (Агентский НЭП)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-ready">Готово к тестированию</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Dmitriy Khlopov</td>
+          <td><span class="stars" title="Конфиг — создание домена">⭐</span></td>
+          <td><span class="time-spent">20m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3018</span>
+            <span class="task-summary">МФО 2.0 | Домен и настройка (Полис 812)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-ready">Готово к тестированию</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Dmitriy Khlopov</td>
+          <td><span class="stars" title="Конфиг — создание домена">⭐</span></td>
+          <td><span class="time-spent">20m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3025</span>
+            <span class="task-summary">МФО | Фиксация показов реф. офферов + кеш</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-closed">Закрыто</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Alex Svistunov</td>
+          <td><span class="stars" title="Новая архитектура кеша офферов, async save, deprecated эндпоинт">⭐⭐⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3030</span>
+            <span class="task-summary">МФО | Вынести конфиг витрины на бек</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-closed">Закрыто</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Alex Svistunov</td>
+          <td><span class="stars" title="Перенос логики фронта на бек, конфиг по партнёрам">⭐⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3044</span>
+            <span class="task-summary">МФО 2.0 | Настройка карточек по ApiKey (МТС-Банк)</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-closed">Закрыто</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Alex Svistunov</td>
+          <td><span class="stars" title="Два булевых поля + условная логика отдачи">⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3047</span>
+            <span class="task-summary">ОСАГО | OfferTypeId не ПУЛ при needReinsurance=true — РГС</span>
+          </td>
+          <td><span class="type-badge type-bug">Ошибка</span></td>
+          <td><span class="status-badge status-testing">Тестирование</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Dmitriy Listopad</td>
+          <td><span class="stars" title="Изолированный баг маппинга типа оффера">⭐⭐</span></td>
+          <td><span class="time-spent">30m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3057</span>
+            <span class="task-summary">Оптимизация аудита InsappLog</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-inprog">В работе</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Sergey Klimov</td>
+          <td><span class="stars" title="SqlBulkCopy вместо INSERT, Channel вместо ConcurrentQueue, exclude сущностей из аудита">⭐⭐⭐⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3068</span>
+            <span class="task-summary">МФО 2.1 | Убрать SelectExternalOffer, использовать GetOffers</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-toprod">Залить на Prod</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Ivan Damaskin</td>
+          <td><span class="stars" title="Переключение фронта на новый контракт API">⭐⭐</span></td>
+          <td><span class="time-spent">3h</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3078</span>
+            <span class="task-summary">ОСАГО | Некорректный vehicleType в Пари</span>
+          </td>
+          <td><span class="type-badge type-bug">Ошибка</span></td>
+          <td><span class="status-badge status-closed">Закрыто</span></td>
+          <td><span class="priority-badge priority-critical">Критичный</span></td>
+          <td>Ilya Kotov</td>
+          <td><span class="stars" title="Исправление одного тега маппера">⭐</span></td>
+          <td><span class="time-spent">45m</span></td>
+        </tr>
+
+        <tr>
+          <td>
+            <span class="task-key-badge">INS-3087</span>
+            <span class="task-summary">ОСАГО | Отключить регионы Альфа на 5 канале</span>
+          </td>
+          <td><span class="type-badge type-task">Задача</span></td>
+          <td><span class="status-badge status-backlog">Backlog</span></td>
+          <td><span class="priority-badge priority-medium">Средний</span></td>
+          <td>Sergey Klimov</td>
+          <td><span class="stars" title="Конфигурационное изменение сегментации">⭐</span></td>
+          <td><span class="time-spent">&mdash;</span></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Complexity Legend -->
+  <div class="complexity-legend">
+    <div class="complexity-legend-title">Легенда сложности</div>
+    <div class="complexity-legend-items">
+      <div class="complexity-legend-item"><span class="stars">⭐</span> Минимальная &mdash; конфиг, cherry-pick</div>
+      <div class="complexity-legend-item"><span class="stars">⭐⭐</span> Низкая &mdash; изолированный баг, небольшая фича</div>
+      <div class="complexity-legend-item"><span class="stars">⭐⭐⭐</span> Средняя &mdash; кросс-компонентные изменения</div>
+      <div class="complexity-legend-item"><span class="stars">⭐⭐⭐⭐</span> Высокая &mdash; новая архитектура, интеграция</div>
+      <div class="complexity-legend-item"><span class="stars">⭐⭐⭐⭐⭐</span> EPIC &mdash; полные интеграции, сложные алгоритмы</div>
+    </div>
+  </div>
+
+  <!-- Tasks note -->
+  <div style="background:#12141e; border: 1px solid #2a2d3e; border-radius: 8px; padding: 12px 16px; margin-bottom: 32px; font-size: 12px; color: #666;">
+    Task counts include all queues where developer is assignee. 20 tasks shown in detail are those directly linked to commits in this period.
+  </div>
+
+  <!-- Insights -->
+  <div class="section-title">Insights</div>
+  <div class="insights">
+    <div class="insights-grid">
+
+      <div class="insight-item">
+        <div class="insight-title">Most Active Developer</div>
+        <div class="insight-value">Sergey Klimov</div>
+        <div class="insight-sub">67 commits across 6 repos</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Most Lines Added</div>
+        <div class="insight-value">Alex Svistunov</div>
+        <div class="insight-sub">+31,495 lines in Insapp</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Fastest MR Merge</div>
+        <div class="insight-value">Dmitriy Listopad</div>
+        <div class="insight-sub">avg 0.2h to merge</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Most MRs Created</div>
+        <div class="insight-value">Alex Svistunov</div>
+        <div class="insight-sub">11 MRs, 9 merged (82%)</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Perfect Acceptance Rate</div>
+        <div class="insight-value">5 developers</div>
+        <div class="insight-sub">Klimov, Listopad, Khlopov, Kotov, Lev Seriy &mdash; 100%</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Multi-Account Dev</div>
+        <div class="insight-value">Lev Seriy</div>
+        <div class="insight-sub">seriy@insapp.ru + swtorsochi@gmail.com (keshigo)</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Total MRs in Period</div>
+        <div class="insight-value">29 MRs</div>
+        <div class="insight-sub">26 merged, 2 open, 1 closed</div>
+      </div>
+
+      <div class="insight-item">
+        <div class="insight-title">Merge Commits Excluded</div>
+        <div class="insight-value">42 merge commits</div>
+        <div class="insight-sub">filtered from 206 raw &rarr; 164 real commits</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Generated by <span>GitLab Dev Report</span> &nbsp;|&nbsp; Period: 20.03.2026 &mdash; 27.03.2026 &nbsp;|&nbsp; 8 repositories &nbsp;|&nbsp; 10 developers
+  </div>
+
+</div>
+</body>
+</html>
